@@ -1,0 +1,260 @@
+{
+  "version": 1,
+  "skills": {
+    "board": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "9916c5ec0bbf7241fb47851c39f3836998be784abcee68c796f36ebca0efaa9b"
+    },
+    "board-prep": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "d1d0f36644c79f93179b6a16a3caadb1ec8355eb28d6ff3ba31271575f2620d7"
+    },
+    "browserstack": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "54f405ae6307f8e8f9cee0d7b56e18aff570b539b07d5d5ee8438a310de38087"
+    },
+    "business-growth-skills": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "354fd61f981bf4b4b8fe326801185085c1425e61c168dde12a2cbd13a172e6cf"
+    },
+    "c-level-advisor": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "7810bafc04233d0e6d507dc330354aa9857e80395ab0c74b30bc7161473ec975"
+    },
+    "challenge": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "4fb0a6178ec27b45b91e9b8e6948b4d75081d6c8dd87a5c0e5a9ba7bb1ca4a6a"
+    },
+    "claude-api": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "32dd09838c3a5c504e702a1e2f6037b4791c87c9013a0b7768ea4eef0e02fb8b"
+    },
+    "coverage": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "c208a45c43b7787555b3a511d75aa54ebdccfe62e0a5c7fbf2dff5a724e5155e"
+    },
+    "design-md": {
+      "source": "google-labs-code/stitch-skills",
+      "sourceType": "github",
+      "computedHash": "44af3e6e89a42a765d9cebf943f1e2ff3cdf43d1958341eb43fb7b74116f6691"
+    },
+    "docx": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "150be87ff7b18f273ad07da303adb1cf2ca21cc3e76db7a2cf0373405178a278"
+    },
+    "engineering-advanced-skills": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "d7235b219107d7f0d7001167b90fed0981ba64e6c4ce97870d2c58dfe3c86c53"
+    },
+    "engineering-skills": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "ae886d808f34c6fe2f0fd2f180b819b6cee3cde85931f0f5ede046ac0b36f08a"
+    },
+    "enhance-prompt": {
+      "source": "google-labs-code/stitch-skills",
+      "sourceType": "github",
+      "computedHash": "28c47bcbc0e8d81f48fbbbe41d227efe4018a32c5d4674b0d052a70d215072d3"
+    },
+    "eval": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "b52c9f60cb87db4f590fd514722a2743da07fa3d8efd4da03cd36f598fab1d60"
+    },
+    "extract": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "91010ede814abb6bf9a8e9860a508000859728123bfb12e8a7bc1c11c047cb19"
+    },
+    "finance-skills": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "0b93046e5ca2d9672efc4bc623711990df5b0b619852742cd3ee4766b58f84ad"
+    },
+    "fix": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "528892a60829bf2444a479b026482ead9a8ecd1c5b53218682f20cbe9220ea75"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "516bd2154eb843a8240e43d5b285229129853114ad7075a5e141e1c08e408c84"
+    },
+    "generate": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "f4a401b9466fa3a86cca78f357788e979aa03971129c3e2ca1ec4f9dd25c21eb"
+    },
+    "hard-call": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "9b09ca598a43a17487b230c32b6c59342e3223437b43cc6d7b70eca5307af756"
+    },
+    "init": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "01a5ae7e921579f13ed7a75e9223bedef62512fbc493976f7cc85afe910ca895"
+    },
+    "loop": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "3b7d7deffe7538f704390ce0433b7b819758c47917e9a9d793f1bc433dd653b9"
+    },
+    "marketing-skills": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "e81d52d6fd03f2c5dd6504fe503ed2eea1f011c62d7368362f522fc9f2228da5"
+    },
+    "mcp-builder": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "f08cbdec74dba480ec5217363446dae154b7576b8c3d9b4cb17aff234f15973b"
+    },
+    "merge": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "b3eecc4813a63c07b6062d334d108097f7f9f68a82e2f39920bd79d7c724c179"
+    },
+    "migrate": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "3330b4888216a9149e357d0c3912911e5ed450a7226c8c8f35af10851f3cc947"
+    },
+    "pdf": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "37226d4220d844377e6b2a386c51a011df4cd130855ff0b80bcc22f9c28abd57"
+    },
+    "pm-skills": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "675954d984fb78eab7d100a1cc5a46f3a8b1ed042f6f1fe97b50d31554b365b5"
+    },
+    "postmortem": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "12ce96d7616921d412e26563c30c45d4eaa078b39226ac3445ee37516e683158"
+    },
+    "pptx": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "2275e4d8dba1790d52f6619b3e2fed04edc948beef545a2ad18e4a1be644426d"
+    },
+    "product-skills": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "565067fbd0722a0eb501708a14bc030745454db13e761728e7facedb17526096"
+    },
+    "promote": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "44e216a7e33a689a4d7a26dd4aa92053abd7edf673a5c12ce4b3ec09d99f753c"
+    },
+    "ra-qm-skills": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "cd6e114e50d696475fee8f0fb059208e107bdbfa1767cc049f4dd6c894878eb2"
+    },
+    "react:components": {
+      "source": "google-labs-code/stitch-skills",
+      "sourceType": "github",
+      "computedHash": "5e786773a89012ae15b01b5c11942db30b09f935929283d8eb8a30b2da5fabf7"
+    },
+    "remember": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "b4a52626c6186d155017ced41edec1d4145a0970e79294f04597d2d2fa148864"
+    },
+    "remotion": {
+      "source": "google-labs-code/stitch-skills",
+      "sourceType": "github",
+      "computedHash": "b3c84d4942732bcd17b47de0a89f9561c460d718b81e0970521077e809d3b990"
+    },
+    "report": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "9671ee1bd89b7f008e1e13e548d59f2e11d986df84ac2c1a14375b30f0a19d16"
+    },
+    "resume": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "5f22648fefda4ea9776d557affd6afa8e4ff8492285b019ede99da9b506af64c"
+    },
+    "review": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "09b14fddf7d5f2279ddc6e6954f894f0435ddb9b91195e68a24b2c0f1bfdb1d7"
+    },
+    "run": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "5387be44634b11f727580b3fe06bf8b78e15cd4b671f39150f152013473a1a80"
+    },
+    "setup": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "8af013cb257cbcd951802e9af5b1ca0ddf42a9a660fccb595d9e08d559a0d5e6"
+    },
+    "shadcn-ui": {
+      "source": "google-labs-code/stitch-skills",
+      "sourceType": "github",
+      "computedHash": "119a14a004bd30fa99d386df599bd0db8d057cca146f7ee08349daed48b2ea55"
+    },
+    "skill-creator": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "57f470f512f45bdac598e302bc72fd62bf2b649fc7fad032efe97720149cde4d"
+    },
+    "spawn": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "4986eff83a6be58515482fd75d05ef815d31a3a9d3c582eca89d49354c1a6305"
+    },
+    "status": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "c6775772443c08db63e24bd703394fbc2572af4a682bb43106b735818e215338"
+    },
+    "stitch-design": {
+      "source": "google-labs-code/stitch-skills",
+      "sourceType": "github",
+      "computedHash": "14d1deae897bc05a31c4e0d9fcf8c86e90cfe77bfbde2f22fafa0735bd0e861c"
+    },
+    "stitch-loop": {
+      "source": "google-labs-code/stitch-skills",
+      "sourceType": "github",
+      "computedHash": "cf47da05045ce0c11f1a8b21dc4ef9bbfed0122d68548a48786cb1608257d574"
+    },
+    "stress-test": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "64f90d6998b185cd580f9c326c30bf53866a78866bff72c5663e153a053a6b2e"
+    },
+    "testrail": {
+      "source": "alirezarezvani/claude-skills",
+      "sourceType": "github",
+      "computedHash": "e4bb3a3b1549f11ac83d6b3e1fa223d883a2002225671e3ea59c1228e10d901e"
+    },
+    "webapp-testing": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "5a6a18c0137cfbabec058e86fc1c8f6919d846a7b2a34ee978cc8ced866ee2e5"
+    },
+    "xlsx": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "cb7fba2177d0d35d14b3244272b25d1b05246e99b3468a087fe06c84193dbd20"
+    }
+  }
+}
