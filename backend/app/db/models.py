@@ -27,3 +27,7 @@ class AnalysisResult(Base):
     risk_score = Column(Float)
     issue_detected = Column(Boolean)
     recommendation = Column(String)
+    # ML-specific fields
+    anomaly_flag = Column(Boolean, default=False)
+    anomaly_score = Column(Float, default=0.0)
+

@@ -1,4 +1,5 @@
 import math
+import time
 from datetime import datetime
 
 class DigitalTwinService:
@@ -9,30 +10,36 @@ class DigitalTwinService:
         
         # Thermal Constants
         self.ambient_temp = 25.0
-        self.k = 0.05  # Cooling constant
-        self.heating_rate = 0.2  # Degrees per PWM second
+        self.k = 0.05  # System cooling/heating constant
+        self.max_temp_gain = 80.0  # Max temp reach at 100% PWM
+        self.start_time = time.time()
         self.last_predicted_temp = 25.0
 
     def predict_motor_position(self, current_steps: int) -> float:
         """
-        Simple kinematic model: Position = Steps * Resolution
+        Simulate position based on step count: Position = Steps * Resolution
         """
-        return current_steps * self.step_resolution
+        return round(current_steps * self.step_resolution, 3)
 
-    def predict_temperature(self, pwm: int, dt: float = 1.0) -> float:
+    def predict_temperature(self, pwm: int, elapsed_time: float = None) -> float:
         """
-        Exponential Heating/Cooling Model:
-        T(t+1) = T(t) + (Heating - Cooling) * dt
+        Exponential Heating Model:
+        T(t) = T_env + (T_target - T_env) * (1 - e^(-k*t))
         """
-        # Heating part based on PWM (0-255)
-        heating = (pwm / 255.0) * self.heating_rate
+        if elapsed_time is None:
+            elapsed_time = time.time() - self.start_time
+
+        # Target temperature depends on PWM power (0-255)
+        # mapped to a temperature range above ambient
+        t_target = self.ambient_temp + (pwm / 255.0) * self.max_temp_gain
         
-        # Cooling part (Newton's Law of Cooling)
-        cooling = self.k * (self.last_predicted_temp - self.ambient_temp)
+        # Calculate prediction using the exponential approach formula
+        # T(t) = T_env + delta_T * (1 - exp(-k * t))
+        temp_rise = (t_target - self.ambient_temp) * (1 - math.exp(-self.k * elapsed_time))
+        predicted_temp = self.ambient_temp + temp_rise
         
-        predicted_temp = self.last_predicted_temp + (heating - cooling) * dt
-        self.last_predicted_temp = max(self.ambient_temp, predicted_temp)
-        
-        return self.last_predicted_temp
+        self.last_predicted_temp = predicted_temp
+        return round(predicted_temp, 2)
 
 twin_service = DigitalTwinService()
+

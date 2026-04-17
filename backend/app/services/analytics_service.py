@@ -1,51 +1,66 @@
 import numpy as np
+import math
 from typing import Dict, Any
 
 class AnalyticsService:
     def __init__(self):
-        self.threshold_z = 3.0  # 3-sigma rule
-        self.drift_threshold = 5.0  # Celsius/mm deviation for drift
+        # Thresholds
+        self.POS_THRESHOLD = 0.5   # mm
+        self.TEMP_THRESHOLD = 15.0  # Celsius
         
-    def detect_anomalies(self, actual: float, predicted: float, history: list) -> Dict[str, Any]:
+        # Z-Score settings
+        self.Z_CRITICAL = 3.0  # 3-sigma
+        
+    def calculate_z_score(self, current_val: float, history: list) -> float:
         """
-        Z-Score Anomaly Detection
+        Calculates how many standard deviations the current value is from the mean.
         """
-        if not history:
-            return {"is_anomaly": False, "score": 0.0}
+        if len(history) < 10:
+            return 0.0
             
-        errors = [h['actual'] - h['predicted'] for h in history]
-        mean_err = np.mean(errors)
-        std_err = np.std(errors) if len(errors) > 1 else 1.0
+        mean = np.mean(history)
+        std = np.std(history)
         
-        current_err = actual - predicted
-        z_score = abs((current_err - mean_err) / std_err) if std_err > 0 else 0.0
-        
-        return {
-            "is_anomaly": z_score > self.threshold_z,
-            "score": float(z_score)
-        }
+        if std == 0:
+            return 0.0
+            
+        return abs((current_val - mean) / std)
 
     def compute_risk(self, pos_error: float, temp_error: float) -> Dict[str, Any]:
         """
-        Aggregated Risk Scoring Logic
+        Aggregated Risk Scoring Logic based on reality gap.
         """
-        # Normalize errors into a 0-1 risk score
-        risk_score = min(1.0, (abs(pos_error) / 10.0 + abs(temp_error) / 20.0) / 2.0)
+        abs_pos_err = abs(pos_error)
+        abs_temp_err = abs(temp_error)
+        
+        # Normalize errors into a 0-1 risk score components
+        # We assume 1.0mm pos error or 25C temp error as "Full Scale Risk"
+        pos_risk = min(1.0, abs_pos_err / 1.0)
+        temp_risk = min(1.0, abs_temp_err / 25.0)
+        
+        # Combined risk (Weighted: Temperature is often more critical for safety)
+        risk_score = (pos_risk * 0.4) + (temp_risk * 0.6)
         
         issue_detected = False
         recommendation = "System Nominal"
         
-        if risk_score > 0.8:
+        # Decision Logic
+        if abs_temp_err > self.TEMP_THRESHOLD:
             issue_detected = True
-            recommendation = "CRITICAL: Immediate shutdown recommended. External resistance detected."
-        elif risk_score > 0.5:
+            recommendation = "CRITICAL: Thermal runaway or sensor failure detected!"
+            risk_score = max(risk_score, 0.9)
+        elif abs_pos_err > self.POS_THRESHOLD:
             issue_detected = True
-            recommendation = "WARNING: System drifting. Check mechanical friction and heater ventilation."
+            recommendation = "WARNING: Motor lead-screw friction or step loss detected."
+            risk_score = max(risk_score, 0.6)
+        elif risk_score > 0.4:
+            recommendation = "NOTICE: System performance drifting from twin model."
             
         return {
-            "risk_score": float(risk_score),
+            "risk_score": round(float(risk_score), 2),
             "issue_detected": issue_detected,
             "recommendation": recommendation
         }
 
 analytics_service = AnalyticsService()
+
