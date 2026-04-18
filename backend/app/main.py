@@ -32,13 +32,17 @@ async def _periodic_retrain_task():
         finally:
             db.close()
 
+from .services.recovery_monitor import background_recovery_monitor
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: DB migration → wire WebSocket → start simulation → start retrain timer
+    # Startup: DB migration → wire WebSocket → start retrain timer
     migrate_db()
     ingestion_service.manager = manager
-    simulation_engine.start()
+    # Auto-start simulation disabled to prioritize physical IoT stream.
+    # simulation_engine.start() 
     asyncio.create_task(_periodic_retrain_task())
+    asyncio.create_task(background_recovery_monitor())
     print(f"[Retrain] Periodic retraining scheduled every {RETRAIN_INTERVAL_SECS//60} minutes")
     yield
     # Shutdown
@@ -150,6 +154,10 @@ async def ingest_esp32_telemetry(payload: ESP32TelemetryIn, db: Session = Depend
                     "recommended_action": rca.get("recommended_action"),
                     "contributing_factors": rca.get("contributing_factors", []),
                 }
+            },
+            "command": {
+                "action": results.get("healing", {}).get("selected_action", "none"),
+                "value": results.get("healing", {}).get("action_value", None)
             }
         }
     except Exception as e:
@@ -313,7 +321,7 @@ async def toggle_simulation():
     else:
         simulation_engine.start()
     return {"status": "ok", "is_running": simulation_engine.is_running}
-@app.post("/chat", tags=["Agents"])
+@app.post("/agents/chat", tags=["Agents"])
 async def chat_with_machine(request: ChatRequest, db: Session = Depends(get_db)):
     """
     Handles conversational AI interaction with system awareness.
@@ -352,3 +360,5 @@ async def test_notification():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+from .api.endpoints import healing
+app.include_router(healing.router, prefix="/healing", tags=["Self-Healing"])

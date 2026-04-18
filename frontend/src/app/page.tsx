@@ -1,9 +1,7 @@
-import DashboardContainer from "@/components/DashboardContainer";
+import DashboardGrid from "@/features/dashboard/DashboardGrid";
 
 export default function Home() {
   return (
-    <main>
-      <DashboardContainer />
-    </main>
+    <DashboardGrid />
   );
 }

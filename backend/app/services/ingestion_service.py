@@ -17,6 +17,8 @@ from ..db import models
 from .twin_service import twin_service
 from .rca_engine import rca_engine
 from ..ml.inference import predict_anomaly
+from app.agents.notification_agent import notification_agent
+from app.agents.self_healing_engine import self_healing_engine
 from ..agents.orchestrator_agent import orchestrator
 from datetime import datetime
 
@@ -119,6 +121,10 @@ class IngestionService:
             "pos_error":   abs(pos_err),
             "temp_error":  abs(temp_err),
         })
+        # ── 5c. Self-Healing Engine ──
+        healing_result = self_healing_engine.process(
+            db, data, ml_result, rca_result, pos_err, temp_err
+        )
 
         # ── 6. Persist Combined Analysis ──────────────────────────────────────
         result = models.AnalysisResult(
@@ -162,7 +168,9 @@ class IngestionService:
                         "temperature": pred_temp,
                     },
                     "analysis": {
-                        # ML layer
+                        # ML & Error layer
+                        "position_error": abs(pos_err),
+                        "temperature_error": abs(temp_err),
                         "risk_score":     ml_result['risk_score'],
                         "anomaly":        ml_result['anomaly'],
                         "anomaly_score":  ml_result['anomaly_score'],
@@ -185,6 +193,7 @@ class IngestionService:
                             "priority":      orchestrator_result["priority"],
                             "explanation":   orchestrator_result["explanation"]["text"] if orchestrator_result.get("explanation") else None,
                             "notified":      orchestrator_result["notification"]["sent"],
+                            "healing":       healing_result
                         }
                     }
                 }
@@ -196,6 +205,7 @@ class IngestionService:
             "prediction": prediction,
             "analysis":   result,
             "rca":        rca_result,      # Available for API response
+            "healing":    healing_result,  # Let main.py send to ESP32
         }
 
 

@@ -1,78 +1,97 @@
 "use client";
 
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { AlertTriangle, TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 interface RiskIndicatorProps {
-  score: number; // 0 to 1
-  trend?: 'up' | 'down' | 'steady';
+  score: number;
+  trend: "up" | "down" | "steady";
 }
 
-export default function RiskIndicator({ score, trend = 'steady' }: RiskIndicatorProps) {
-  // Color interpolation logic
-  const getColor = (val: number) => {
-    if (val < 0.3) return 'var(--primary)'; // Normal
-    if (val < 0.7) return 'var(--accent)';  // Warning
-    return 'var(--danger)';                  // Critical
-  };
-
-  const statusText = score < 0.3 ? "SYSTEM NOMINAL" : score < 0.7 ? "DRIFT DETECTED" : "CRITICAL ANOMALY";
-  const glowColor = getColor(score);
+export default function RiskIndicator({ score, trend }: RiskIndicatorProps) {
+  const safeScore = score ?? 0;
+  const roundedScore = Math.min(1, Math.max(0, safeScore));
+  const percentage = (roundedScore * 100).toFixed(1);
+  const color = roundedScore > 0.5 ? "var(--danger)" : roundedScore > 0.3 ? "var(--accent)" : "var(--primary)";
+  
+  // SVG Parameters
+  const size = 200;
+  const strokeWidth = 12;
+  const center = size / 2;
+  const radius = center - strokeWidth;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (roundedScore * circumference);
 
   return (
-    <div className="flex flex-col h-full bg-card border border-border rounded-xl p-6 relative overflow-hidden transition-all duration-300">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted">AI Risk Score</h3>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: glowColor }}></div>
-          <span className="text-[10px] font-mono font-bold tracking-wider" style={{ color: glowColor }}>{statusText}</span>
-        </div>
-      </div>
-
-      <div className="flex-1 flex flex-col items-center justify-center relative">
-        <div className="flex items-end gap-2">
-          <div className="text-7xl font-bold font-mono tracking-tighter transition-all" style={{ color: glowColor }}>
-            {score.toFixed(2)}
-          </div>
-          
-          {/* Trend Indicator */}
-          <div className="flex flex-col items-center pb-2">
-            {trend === 'up' ? (
-              <div className="flex items-center gap-1 text-danger animate-bounce">
-                <TrendingUp size={20} />
-                <span className="text-[10px] font-bold">INCREASING</span>
-              </div>
-            ) : trend === 'down' ? (
-              <div className="flex items-center gap-1 text-primary">
-                <TrendingDown size={20} />
-                <span className="text-[10px] font-bold">DECREASING</span>
-              </div>
-            ) : (
-              <div className="text-muted opacity-50">
-                <Minus size={20} />
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-6 w-full bg-background/50 border border-border rounded-full h-2 overflow-hidden">
-          <div 
-            className="h-full transition-all duration-700 ease-in-out" 
-            style={{ width: `${score * 100}%`, backgroundColor: glowColor }}
-          />
-        </div>
-      </div>
+    <div className="relative flex items-center justify-center group">
       
-      <div className="mt-4 grid grid-cols-2 gap-4">
-        <div className="p-3 bg-background border border-border rounded-lg">
-          <div className="text-[10px] text-muted mb-1 uppercase tracking-widest">Stability</div>
-          <div className="text-sm font-mono font-bold text-foreground">{(100 - score * 40).toFixed(1)}%</div>
+      {/* Background Glow Ring */}
+      <div 
+        className="absolute inset-0 rounded-full blur-[40px] opacity-20 transition-all duration-1000 group-hover:opacity-40" 
+        style={{ backgroundColor: color }} 
+      />
+
+      <svg width={size} height={size} className="transform -rotate-90">
+        <defs>
+          <filter id="gaugeShadow">
+            <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor={color} />
+          </filter>
+        </defs>
+
+        {/* Outer Background Ring */}
+        <circle
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="transparent"
+          stroke="var(--border)"
+          strokeWidth={strokeWidth}
+          strokeOpacity={0.1}
+        />
+
+        {/* Progress Ring */}
+        <circle
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="transparent"
+          stroke={color}
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          filter="url(#gaugeShadow)"
+          className="transition-all duration-1000 ease-out"
+        />
+      </svg>
+
+      {/* Center Metrics */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center select-none">
+        <div className="flex flex-col items-center gap-1">
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60 font-tech">Intelligence</span>
+          <div className="flex items-baseline gap-1">
+            <span className="text-5xl font-bold font-tech tracking-tighter" style={{ color }}>{roundedScore.toFixed(2)}</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1 bg-background/50 border border-border rounded-full mt-2 transition-all group-hover:border-primary/20">
+            {trend === "up" ? <TrendingUp size={12} className="text-danger" /> : trend === "down" ? <TrendingDown size={12} className="text-emerald-500" /> : <Minus size={12} className="text-muted" />}
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{trend === "steady" ? "Stable" : trend} Velocity</span>
+          </div>
         </div>
-        <div className="p-3 bg-background border border-border rounded-lg">
-          <div className="text-[10px] text-muted mb-1 uppercase tracking-widest">Confidence</div>
-          <div className="text-sm font-mono font-bold text-foreground">94.8%</div>
-        </div>
+      </div>
+
+      {/* Decorative Marks */}
+      <div className="absolute inset-0 pointer-events-none opacity-20 group-hover:rotate-45 transition-transform duration-1000">
+        {[...Array(8)].map((_, i) => (
+          <div 
+            key={i} 
+            className="absolute w-[1px] h-3 bg-muted" 
+            style={{ 
+              top: '50%', 
+              left: '50%', 
+              transform: `translate(-50%, -50%) rotate(${i * 45}deg) translateY(-85px)` 
+            }} 
+          />
+        ))}
       </div>
     </div>
   );
 }
-

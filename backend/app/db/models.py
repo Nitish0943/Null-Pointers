@@ -41,4 +41,17 @@ class AnalysisResult(Base):
     alert_state     = Column(String,  default="CLEAR")  # Monitoring agent alert state
     source          = Column(String,  default="simulated")
 
-
+class HealingEvent(Base):
+    """
+    Logs autonomous self-healing interventions, actions taken, and verification results.
+    """
+    __tablename__ = "healing_events"
+    id = Column(Integer, primary_key=True, index=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    anomaly_detected = Column(String)       # e.g., "Overheating", "Mechanical friction rise"
+    action_taken = Column(String)           # e.g., "reduce_pwm"
+    action_value = Column(Integer, nullable=True) # e.g., 120
+    confidence = Column(Float)
+    command_sent = Column(Boolean, default=True)
+    verification_status = Column(String, default="verifying") # verifying, recovered, failed, escalated
+    recovery_time_sec = Column(Float, nullable=True)
