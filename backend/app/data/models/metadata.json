@@ -1,5 +1,5 @@
 {
-  "trained_at": "2026-04-18T11:37:35.200614+00:00",
+  "trained_at": "2026-04-18T13:00:02.756633+00:00",
   "n_samples": 4000,
   "contamination": 0.05,
   "score_min": -0.104104,
@@ -7,6 +7,6 @@
   "validation": {
     "normal_precision": 0.994,
     "fault_recall": 1.0,
-    "tested_at": "2026-04-18T11:37:35.199853+00:00"
+    "tested_at": "2026-04-18T13:00:02.751594+00:00"
   }
 }
