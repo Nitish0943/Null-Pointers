@@ -5,7 +5,7 @@ import { useTelemetry } from '@/hooks/useTelemetry';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Activity, ShieldAlert, Cpu, PowerOff, Zap, Play } from 'lucide-react';
+import { Activity, ShieldAlert, Cpu, PowerOff, Zap, Play, Wrench, TrendingDown } from 'lucide-react';
 import RiskIndicator from '@/components/RiskIndicator';
 import ErrorMetrics from '@/components/ErrorMetrics';
 import TelemetryGraph from '@/components/TelemetryGraph';
@@ -112,6 +112,7 @@ export default function DashboardGrid() {
         {/* Right Col: AI & Risk */}
         <div className="flex flex-col gap-6">
             
+
             {/* Risk Indicator Panel */}
             <Card className="relative overflow-hidden group min-h-[250px]">
                 <CardHeader>
@@ -176,6 +177,7 @@ export default function DashboardGrid() {
                     )}
                 </CardContent>
             </Card>
+
         </div>
       </div>
     </div>

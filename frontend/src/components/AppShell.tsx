@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
+import FloatingChatBot from './FloatingChatBot';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   // Use a layout effect or similar to check screen width if desired,
@@ -27,6 +28,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <>
       <Navbar />
       <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
+      <FloatingChatBot />
       <div 
         className="flex-1 flex flex-col h-screen pt-[64px] transition-all duration-300"
         style={{ paddingLeft: collapsed ? '80px' : '240px' }}

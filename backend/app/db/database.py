@@ -32,6 +32,7 @@ def migrate_db():
         # Agent columns — 4-agent integration
         ("llm_explanation", "TEXT DEFAULT NULL"),
         ("alert_state",     "TEXT DEFAULT 'CLEAR'"),
+        ("machine_voice",   "TEXT DEFAULT NULL"),
     ]
     with engine.connect() as conn:
         # Migrate analysis_results
@@ -49,6 +50,20 @@ def migrate_db():
             except Exception: pass
             
         conn.commit()
+    
+    # Migrate maintenance_tickets
+    maintenance_migrations = [
+        ("severity",          "TEXT DEFAULT 'LOW'"),
+        ("loss_estimate_inr", "FLOAT DEFAULT 0.0"),
+    ]
+    with engine.connect() as conn:
+        for col_name, col_def in maintenance_migrations:
+            try:
+                conn.execute(text(f"ALTER TABLE maintenance_tickets ADD COLUMN {col_name} {col_def}"))
+                print(f"[DB Migration] + maintenance_tickets column: {col_name}")
+            except Exception: pass
+        conn.commit()
+
     print("[DB Migration] Schema is up to date.")
 
 

@@ -39,6 +39,7 @@ class AnalysisResult(Base):
     # Agent fields (added by 4-agent integration)
     llm_explanation = Column(Text,    default=None)  # Gemini-generated maintenance report
     alert_state     = Column(String,  default="CLEAR")  # Monitoring agent alert state
+    machine_voice   = Column(Text,    default=None)   # Machine self-explanation
     source          = Column(String,  default="simulated")
 
 class HealingEvent(Base):
@@ -55,3 +56,29 @@ class HealingEvent(Base):
     command_sent = Column(Boolean, default=True)
     verification_status = Column(String, default="verifying") # verifying, recovered, failed, escalated
     recovery_time_sec = Column(Float, nullable=True)
+
+class MaintenanceTicket(Base):
+    __tablename__ = "maintenance_tickets"
+    id = Column(Integer, primary_key=True, index=True)
+    ticket_id = Column(String, unique=True, index=True)
+    machine_id = Column(String, index=True)
+    priority = Column(String) # Low, Medium, High, Critical
+    issue = Column(String)
+    recommended_part = Column(String)
+    repair_eta = Column(String)
+    downtime_window = Column(String)
+    status = Column(String, default="Open") # Open, In Progress, Closed
+    severity = Column(String, nullable=True) # LOW, MEDIUM, HIGH, CRITICAL
+    loss_estimate_inr = Column(Float, nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+
+class ProductionLoss(Base):
+    __tablename__ = "production_losses"
+    id = Column(Integer, primary_key=True, index=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    machine_id = Column(String, index=True)
+    estimated_downtime_min = Column(Integer)
+    units_lost = Column(Integer)
+    cost_loss_inr = Column(Float)
+    urgency = Column(String) # Low, Medium, High, Critical
+    recovery_priority = Column(String) # Immediate, Normal, Scheduled

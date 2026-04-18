@@ -19,6 +19,8 @@ from .rca_engine import rca_engine
 from ..ml.inference import predict_anomaly
 from app.agents.notification_agent import notification_agent
 from app.agents.self_healing_engine import self_healing_engine
+from app.agents.maintenance_engine import maintenance_engine
+from app.agents.loss_engine import loss_engine
 from ..agents.orchestrator_agent import orchestrator
 from datetime import datetime
 
@@ -125,6 +127,25 @@ class IngestionService:
         healing_result = self_healing_engine.process(
             db, data, ml_result, rca_result, pos_err, temp_err
         )
+        # ── 5d. Production Loss Estimation ──
+        loss_metrics = loss_engine.process(
+            db, ml_result, rca_result, machine_id=source
+        )
+
+        # ── 5e. Maintenance Ticket Generation ──
+        maintenance_ticket = maintenance_engine.process(
+            db, ml_result, rca_result, active_source=source, loss_metrics=loss_metrics
+        )
+
+        # ── 5f. AI Failure Time Machine (History Replay + Simulation) ──
+        from app.agents.time_machine import time_machine
+        failure_timeline = time_machine.process(
+            db, ml_result, rca_result, machine_id=source
+        )
+
+        # ── 5g. Digital Twin talks like a Human ──
+        from app.agents.machine_voice_engine import machine_voice_engine
+        machine_voice = machine_voice_engine.generate_message(ml_result, rca_result)
 
         # ── 6. Persist Combined Analysis ──────────────────────────────────────
         result = models.AnalysisResult(
@@ -146,6 +167,7 @@ class IngestionService:
                 if orchestrator_result.get("explanation") else None
             ),
             alert_state=orchestrator_result["monitoring"]["alert_state"],
+            machine_voice=machine_voice,
             source=source,
         )
         db.add(result)
@@ -193,7 +215,11 @@ class IngestionService:
                             "priority":      orchestrator_result["priority"],
                             "explanation":   orchestrator_result["explanation"]["text"] if orchestrator_result.get("explanation") else None,
                             "notified":      orchestrator_result["notification"]["sent"],
-                            "healing":       healing_result
+                            "healing":       healing_result,
+                            "maintenance":   maintenance_ticket,
+                            "loss_metrics":  loss_metrics,
+                            "failure_timeline": failure_timeline,
+                            "machineVoice":  machine_voice
                         }
                     }
                 }

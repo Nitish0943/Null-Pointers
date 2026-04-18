@@ -362,3 +362,15 @@ async def test_notification():
 
 from .api.endpoints import healing
 app.include_router(healing.router, prefix="/healing", tags=["Self-Healing"])
+
+from .api.endpoints import maintenance
+app.include_router(maintenance.router, prefix="/maintenance", tags=["Maintenance"])
+
+from .api.endpoints import loss
+app.include_router(loss.router, prefix="/analytics", tags=["Analytics"])
+
+from .api.endpoints import failure
+app.include_router(failure.router, prefix="/failure", tags=["Diagnostics"])
+
+from .api.endpoints import voice
+app.include_router(voice.router, prefix="/voice", tags=["Machine Voice"])

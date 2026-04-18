@@ -17,7 +17,10 @@ export interface TelemetryState {
   recommendations: string[];
   isSimRunning: boolean;
   activeSource: string;
-  healing: any | null;
+  maintenance: any[];
+  lossMetrics: any | null;
+  failureTimeline: { past_events: string[]; future_if_ignored: string[] } | null;
+  machineVoice: string | null;
 }
 
 export function useTelemetry() {
@@ -32,7 +35,11 @@ export function useTelemetry() {
     recommendations: ["System initializing...", "Establishing Neural Link..."],
     isSimRunning: false,
     activeSource: 'Standby',
-    healing: null
+    healing: null,
+    maintenance: [],
+    lossMetrics: null,
+    failureTimeline: null,
+    machineVoice: null
   });
 
   const [connected, setConnected] = useState(false);
@@ -54,6 +61,18 @@ export function useTelemetry() {
     let cleanup = false;
     let retryTimeout: NodeJS.Timeout;
 
+    // Load initial historical tickets
+    const loadTickets = async () => {
+        try {
+            const res = await fetch(`${API_BASE}/maintenance/list?limit=5`);
+            if (res.ok) {
+                const data = await res.json();
+                setData(prev => ({ ...prev, maintenance: data.tickets || [] }));
+            }
+        } catch (e) {}
+    };
+    loadTickets();
+
     const connect = () => {
       if (cleanup) return;
       
@@ -72,24 +91,40 @@ export function useTelemetry() {
         switch (msg.type) {
           case 'TELEMETRY_UPDATE':
             const timeStr = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            setData(prev => ({
-              ...prev,
-              position: [...prev.position.slice(-29), { 
-                time: timeStr, 
-                actual: msg.data.actual.position, 
-                predicted: msg.data.predicted.position 
-              }],
-              temperature: [...prev.temperature.slice(-29), { 
-                time: timeStr, 
-                actual: msg.data.actual.temperature, 
-                predicted: msg.data.predicted.temperature 
-              }],
-              riskScore: msg.data.analysis.risk_score,
-              posError: msg.data.analysis.position_error,
-              tempError: msg.data.analysis.temperature_error,
-              activeSource: msg.data.actual.source === 'iot' ? 'Physical IoT' : 'Simulation',
-              healing: msg.data.analysis.agents?.healing || null
-            }));
+            setData(prev => {
+              // Extract ticket if generated
+              const newTicket = msg.data.analysis.agents?.maintenance;
+              let updatedTickets = prev.maintenance;
+              if (newTicket) {
+                  // Only add if not duplicate by ID
+                  if (!updatedTickets.find(t => t.ticket_id === newTicket.ticket_id)) {
+                      updatedTickets = [newTicket, ...updatedTickets].slice(0, 5);
+                  }
+              }
+
+              return {
+                ...prev,
+                position: [...prev.position.slice(-29), { 
+                  time: timeStr, 
+                  actual: msg.data.actual.position, 
+                  predicted: msg.data.predicted.position 
+                }],
+                temperature: [...prev.temperature.slice(-29), { 
+                  time: timeStr, 
+                  actual: msg.data.actual.temperature, 
+                  predicted: msg.data.predicted.temperature 
+                }],
+                riskScore: msg.data.analysis.risk_score,
+                posError: msg.data.analysis.position_error,
+                tempError: msg.data.analysis.temperature_error,
+                activeSource: msg.data.actual.source === 'iot' ? 'Physical IoT' : 'Simulation',
+                healing: msg.data.analysis.agents?.healing || null,
+                maintenance: updatedTickets,
+                lossMetrics: msg.data.analysis.agents?.loss_metrics || prev.lossMetrics,
+                failureTimeline: msg.data.analysis.agents?.failure_timeline || prev.failureTimeline,
+                machineVoice: msg.data.analysis.agents?.machineVoice || prev.machineVoice
+              };
+            });
             break;
 
           case 'MONITORING_ALERT':

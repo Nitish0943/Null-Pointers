@@ -43,6 +43,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
     {
       group: "System",
       items: [
+        { name: "Admin Center", href: "/admin", icon: Shield },
         { name: "Settings", href: "/settings", icon: Settings },
       ]
     }
