@@ -45,7 +45,7 @@ class SimulationEngine:
             # Process via ingestion service
             db = SessionLocal()
             try:
-                await ingestion_service.process_telemetry(db, payload)
+                await ingestion_service.process_telemetry(db, payload, source="simulated")
                 # Note: We don't broadcast here directly to keep it decoupled
                 # The main API will handle broadcasting if desired, or we can add it
             finally:

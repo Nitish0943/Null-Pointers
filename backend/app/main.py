@@ -1,28 +1,60 @@
 from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from typing import List, Dict
 from sqlalchemy.orm import Session
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from .db.database import engine, Base, get_db, migrate_db
+from .db.database import engine, Base, get_db, migrate_db, SessionLocal
 from .services.ingestion_service import ingestion_service
 from .services.simulation_service import simulation_engine
 from .db import models
+from .ml.metadata import load_metadata
+from .ml.model import retrain_from_history, RETRAIN_INTERVAL_SECS
+from .agents.orchestrator_agent import orchestrator as agent_orchestrator
+from .agents.notification_agent import notification_agent
+from .agents.chat_agent import chat_agent
 from pydantic import BaseModel
 import json
+import asyncio
 
 # Ensure tables are created
 Base.metadata.create_all(bind=engine)
 
+async def _periodic_retrain_task():
+    """Background task: retrain model from live SQLite history every 30 minutes."""
+    while True:
+        await asyncio.sleep(RETRAIN_INTERVAL_SECS)
+        print("[Retrain] Scheduled retraining check...")
+        db = SessionLocal()
+        try:
+            retrain_from_history(db)
+        except Exception as e:
+            print(f"[Retrain] Background task error: {e}")
+        finally:
+            db.close()
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Run DB migration, wire services, start simulation
+    # Startup: DB migration → wire WebSocket → start simulation → start retrain timer
     migrate_db()
     ingestion_service.manager = manager
     simulation_engine.start()
+    asyncio.create_task(_periodic_retrain_task())
+    print(f"[Retrain] Periodic retraining scheduled every {RETRAIN_INTERVAL_SECS//60} minutes")
     yield
     # Shutdown
     simulation_engine.stop()
 
 
 app = FastAPI(title="Agentic Digital Twin API", lifespan=lifespan)
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify ["http://localhost:3000"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class TelemetryIn(BaseModel):
     """
@@ -55,6 +87,10 @@ class ESP32TelemetryIn(BaseModel):
     temperature: float # Heater/motor temperature (°C) — direct mapping
     current: float     # Motor current draw (A) — maps to PWM/effort signal
 
+class ChatRequest(BaseModel):
+    message: str
+    history: List[Dict[str, str]] = []
+
 # ─── ESP32 Endpoint ───────────────────────────────────────────────────────────
 @app.post("/esp32/telemetry", tags=["ESP32"])
 async def ingest_esp32_telemetry(payload: ESP32TelemetryIn, db: Session = Depends(get_db)):
@@ -85,22 +121,35 @@ async def ingest_esp32_telemetry(payload: ESP32TelemetryIn, db: Session = Depend
         "temperature": payload.temperature,
         "pwm":         mapped_pwm,
         "steps":       mapped_steps,
+        "current":     payload.current,   # Raw current passed for RCA engine
     }
 
     try:
-        results = await ingestion_service.process_telemetry(db, pipeline_data)
+        results = await ingestion_service.process_telemetry(db, pipeline_data, source="iot")
 
         analysis = results["analysis"]
+        rca      = results.get("rca", {})
+
         return {
-            "status":  "ok",
-            "source":  "esp32",
-            "mapped":  pipeline_data,           # Show what was sent to the twin
+            "status": "ok",
+            "source": "esp32",
+            "mapped": {k: v for k, v in pipeline_data.items() if k != "current"},
             "analysis": {
+                # ML layer
                 "risk_score":     analysis.risk_score,
                 "issue_detected": analysis.issue_detected,
                 "anomaly":        analysis.anomaly_flag,
                 "anomaly_score":  analysis.anomaly_score,
                 "recommendation": analysis.recommendation,
+                # RCA layer
+                "rca": {
+                    "root_cause":         rca.get("root_cause"),
+                    "confidence_score":   rca.get("confidence_score"),
+                    "severity":           rca.get("severity"),
+                    "reasoning":          rca.get("reasoning", []),
+                    "recommended_action": rca.get("recommended_action"),
+                    "contributing_factors": rca.get("contributing_factors", []),
+                }
             }
         }
     except Exception as e:
@@ -112,7 +161,19 @@ async def ingest_esp32_telemetry(payload: ESP32TelemetryIn, db: Session = Depend
 async def ingest_telemetry(payload: TelemetryIn, db: Session = Depends(get_db)):
     try:
         results = await ingestion_service.process_telemetry(db, payload.dict())
-        return {"status": "success", "analysis": results['analysis']}
+        analysis = results["analysis"]
+        rca      = results.get("rca", {})
+        return {
+            "status": "success",
+            "analysis": {
+                "risk_score":     analysis.risk_score,
+                "issue_detected": analysis.issue_detected,
+                "anomaly":        analysis.anomaly_flag,
+                "anomaly_score":  analysis.anomaly_score,
+                "recommendation": analysis.recommendation,
+                "rca": rca,
+            }
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -155,15 +216,24 @@ def get_analytics(db: Session = Depends(get_db)):
     latest = db.query(models.AnalysisResult).order_by(models.AnalysisResult.timestamp.desc()).first()
     if not latest:
         return {"risk_score": 0.0, "status": "No data"}
+    import json as _json
     return {
-        "risk_score":       latest.risk_score,
-        "issue_detected":   latest.issue_detected,
-        "recommendation":   latest.recommendation,
-        "anomaly":          latest.anomaly_flag,
-        "anomaly_score":    latest.anomaly_score,
-        "position_error":   latest.position_error,
-        "temperature_error":latest.temperature_error,
-        "timestamp":        latest.timestamp
+        # ML layer
+        "risk_score":        latest.risk_score,
+        "issue_detected":    latest.issue_detected,
+        "recommendation":    latest.recommendation,
+        "anomaly":           latest.anomaly_flag,
+        "anomaly_score":     latest.anomaly_score,
+        "position_error":    latest.position_error,
+        "temperature_error": latest.temperature_error,
+        "timestamp":         latest.timestamp,
+        # RCA layer
+        "rca": {
+            "root_cause":        latest.rca_root_cause,
+            "confidence_score":  latest.rca_confidence,
+            "severity":          latest.rca_severity,
+            "reasoning":         _json.loads(latest.rca_reasoning or "[]"),
+        }
     }
 
 @app.get("/history")
@@ -179,4 +249,103 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
+
+# ─── ML Health Endpoints (Phase 4 & 5) ───────────────────────────────────────
+
+@app.get("/ml/status", tags=["ML"])
+def get_ml_status():
+    """Returns current state of the trained Isolation Forest model."""
+    try:
+        meta = load_metadata()
+        return {"status": "ok", "model": meta}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Could not load ML metadata: {e}")
+
+
+@app.post("/ml/retrain", tags=["ML"])
+async def trigger_retrain(db: Session = Depends(get_db)):
+    """
+    Manually trigger a model retrain from live telemetry history.
+    Only runs if ≥200 confirmed-normal DB samples exist.
+    """
+    try:
+        success = retrain_from_history(db)
+        if success:
+            return {
+                "status":   "retrained",
+                "message":  "Model retrained from live history",
+                "metadata": load_metadata(),
+            }
+        return {
+            "status":  "skipped",
+            "message": "Not enough confirmed-normal samples in DB yet (need ≥200)",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Retrain error: {str(e)}")
+
+
+
+
+
+# --- Agent Endpoints (4-Agent Integration) ---
+
+@app.get('/agents/status', tags=['Agents'])
+def get_agents_status():
+    try:
+        return agent_orchestrator.get_status()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/simulation/status", tags=["Simulation"])
+async def get_sim_status():
+    return {
+        "is_running": simulation_engine.is_running,
+        "mode": "ACTIVE" if simulation_engine.is_running else "IDLE"
+    }
+
+@app.post("/simulation/toggle", tags=["Simulation"])
+async def toggle_simulation():
+    if simulation_engine.is_running:
+        simulation_engine.stop()
+    else:
+        simulation_engine.start()
+    return {"status": "ok", "is_running": simulation_engine.is_running}
+@app.post("/chat", tags=["Agents"])
+async def chat_with_machine(request: ChatRequest, db: Session = Depends(get_db)):
+    """
+    Handles conversational AI interaction with system awareness.
+    """
+    # Get latest telemetry and analytics for context
+    latest_analysis = db.query(models.AnalysisResult).order_by(models.AnalysisResult.timestamp.desc()).first()
+    latest_telemetry = db.query(models.TelemetryData).order_by(models.TelemetryData.timestamp.desc()).first()
+    
+    if latest_analysis and latest_telemetry:
+        context = (
+            f"Machine Status: {latest_analysis.alert_state or 'CLEAR'}. "
+            f"Temperature: {latest_telemetry.actual_temperature:.1f}°C (Error: {latest_analysis.temperature_error:.1f}). "
+            f"Position: {latest_telemetry.actual_position:.3f}mm (Error: {latest_analysis.position_error:.3f}). "
+            f"Risk Score: {latest_analysis.risk_score:.2f}. "
+            f"Last RCA: {latest_analysis.llm_explanation[:100] if latest_analysis.llm_explanation else 'No active faults'}..."
+        )
+    elif latest_telemetry:
+         context = f"Telemetry active: Temp {latest_telemetry.actual_temperature:.1f}°C, Pos {latest_telemetry.actual_position:.3f}mm. Analytics pending."
+    else:
+        context = "No telemetry data recorded yet. The system is idle."
+
+    response = await chat_agent.chat(
+        user_message=request.message,
+        chat_history=request.history,
+        system_context=context
+    )
+
+    return {"response": response, "context_used": context}
+
+
+@app.post('/agents/test-notify', tags=['Agents'])
+async def test_notification():
+    try:
+        results = await notification_agent.send_test()
+        return {'status': 'test_sent', 'channels': results, 'tip': 'Add TELEGRAM_TOKEN + TELEGRAM_CHAT_ID to .env to enable Telegram.'}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
