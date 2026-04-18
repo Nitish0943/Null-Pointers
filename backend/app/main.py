@@ -185,9 +185,12 @@ class ConnectionManager:
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
         self.active_connections.append(websocket)
+        print(f"[WebSocket] Neural Link Established: {websocket.client}")
 
     def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+            print("[WebSocket] Neural Link Severed")
 
     async def broadcast(self, message: dict):
         for connection in self.active_connections:
