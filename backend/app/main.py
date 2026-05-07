@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from typing import List, Dict
+from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -249,7 +250,39 @@ def get_analytics(db: Session = Depends(get_db)):
 
 @app.get("/history")
 def get_history(limit: int = 100, db: Session = Depends(get_db)):
-    return db.query(models.TelemetryData).order_by(models.TelemetryData.timestamp.desc()).limit(limit).all()
+    # Since AnalysisResult and TelemetryData are created in pairs by ingestion_service,
+    # we can fetch both and join them by timestamp (or order).
+    # For simplicity and performance in this specific architecture, we'll fetch them together.
+    telemetry = db.query(models.TelemetryData).order_by(models.TelemetryData.timestamp.desc()).limit(limit).all()
+    results = []
+    
+    for t in telemetry:
+        # Find the analysis result closest in time to this telemetry point (within 1 second)
+        # In a production app, we would use a foreign key relationship.
+        analysis = db.query(models.AnalysisResult).filter(
+            models.AnalysisResult.timestamp >= t.timestamp,
+            models.AnalysisResult.timestamp < t.timestamp + timedelta(seconds=1)
+        ).first()
+        
+        item = {
+            "id": t.id,
+            "timestamp": t.timestamp,
+            "actual_position": t.actual_position,
+            "actual_temperature": t.actual_temperature,
+            "pwm": t.pwm,
+            "steps": t.steps,
+            "source": t.source,
+            "anomaly_flag": analysis.anomaly_flag if analysis else False,
+            "anomaly_score": analysis.anomaly_score if analysis else 0.0,
+            "position_error": analysis.position_error if analysis else 0.0,
+            "temperature_error": analysis.temperature_error if analysis else 0.0,
+            # Derive predicted values from error if not stored directly
+            "predicted_position": t.actual_position - (analysis.position_error if analysis else 0),
+            "predicted_temperature": t.actual_temperature - (analysis.temperature_error if analysis else 0)
+        }
+        results.append(item)
+    
+    return results
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -313,6 +346,24 @@ async def get_sim_status():
         "is_running": simulation_engine.is_running,
         "mode": "ACTIVE" if simulation_engine.is_running else "IDLE"
     }
+
+class PositionRequest(BaseModel):
+    position: float
+
+class TemperatureRequest(BaseModel):
+    temperature: float
+
+@app.post("/simulation/set-position", tags=["Simulation"])
+async def set_position(request: PositionRequest):
+    simulation_engine.set_target_position(request.position)
+    await simulation_engine.trigger_update()
+    return {"status": "ok", "target": request.position}
+
+@app.post("/simulation/set-temperature", tags=["Simulation"])
+async def set_temperature(request: TemperatureRequest):
+    simulation_engine.set_target_temperature(request.temperature)
+    await simulation_engine.trigger_update()
+    return {"status": "ok", "target": request.temperature}
 
 @app.post("/simulation/toggle", tags=["Simulation"])
 async def toggle_simulation():

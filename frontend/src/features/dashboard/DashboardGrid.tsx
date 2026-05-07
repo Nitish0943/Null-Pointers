@@ -1,177 +1,226 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useTelemetry } from '@/hooks/useTelemetry';
+import { setSimulationPosition, setSimulationTemperature } from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Activity, ShieldAlert, Cpu, PowerOff, Zap, Play, Wrench, TrendingDown } from 'lucide-react';
+import { Activity, ShieldAlert, Cpu, PowerOff, Play } from 'lucide-react';
 import RiskIndicator from '@/components/RiskIndicator';
 import ErrorMetrics from '@/components/ErrorMetrics';
 import TelemetryGraph from '@/components/TelemetryGraph';
 
 export default function DashboardGrid() {
   const { data, connected, toggleSimulation } = useTelemetry();
+  const [targetPos, setTargetPos] = useState<string>('');
+  const [targetTemp, setTargetTemp] = useState<string>('');
+
+  const handleExecutePos = async () => {
+    if (!targetPos) return;
+    try {
+      await setSimulationPosition(parseFloat(targetPos));
+      setTargetPos('');
+    } catch (e) {
+      console.error("Failed to set position", e);
+    }
+  };
+
+  const handleExecuteTemp = async () => {
+    if (!targetTemp) return;
+    try {
+      await setSimulationTemperature(parseFloat(targetTemp));
+      setTargetTemp('');
+    } catch (e) {
+      console.error("Failed to set temperature", e);
+    }
+  };
 
   return (
-    <div className="flex flex-col gap-6 max-w-[1600px] mx-auto border-transparent">
+    <div className="flex flex-col gap-4 max-w-[1600px] mx-auto h-[calc(100vh-120px)] overflow-hidden px-4">
       
       {/* ─── TOP METRICS ROW ─────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 shrink-0 px-2 lg:px-0">
         
         {/* Connection Status */}
-        <Card className="hover:border-primary/20 transition-colors">
-          <CardHeader className="flex flex-row justify-between items-center pb-2">
-            <CardTitle className="text-[10px]">Machine State</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold font-mono">
-              {data.isSimRunning ? "RUNNING" : "STANDBY"}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${connected ? "bg-emerald-500 animate-pulse" : "bg-danger"}`} />
-              {connected ? "Link Synchronized" : "Connection Lost"}
-            </p>
-          </CardContent>
+        <Card className="hover:border-primary/20 transition-colors py-1.5 px-3">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">Machine State</span>
+            <Activity className="h-3 w-3 text-muted-foreground/40" />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-lg font-bold font-mono tracking-tight">{data.isSimRunning ? "RUNNING" : "STANDBY"}</span>
+            <span className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-emerald-500 animate-pulse shadow-[0_0_8px_var(--emerald-500)]" : "bg-danger"}`} />
+          </div>
+          <p className="text-[8px] text-muted-foreground/80 mt-0.5 font-mono uppercase tracking-tighter">
+            {connected ? "NEURAL LINK ACTIVE" : "LINK SEVERED"}
+          </p>
         </Card>
 
         {/* Action Source */}
-        <Card className="hover:border-accent/20 transition-colors">
-          <CardHeader className="flex flex-row justify-between items-center pb-2">
-            <CardTitle className="text-[10px]">Active Stream</CardTitle>
-            <HardDriveIcon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold font-mono">
-              {data.activeSource === 'Standby' ? 'WAITING' : 'ACTIVE'}
-            </div>
-            <p className="text-xs mt-1">
-              {data.activeSource === 'Physical IoT' 
-                ? <span className="text-emerald-500 font-bold">Physical IoT Hardware</span> 
-                : <span className="text-accent font-bold">Digital Twin Simulation</span>}
-            </p>
-          </CardContent>
+        <Card className="hover:border-accent/20 transition-colors py-1.5 px-3">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">Active Stream</span>
+            <HardDriveIcon className="h-3 w-3 text-muted-foreground/40" />
+          </div>
+          <div className="text-lg font-bold font-mono">
+            {data.activeSource === 'Standby' ? 'WAITING' : 'ACTIVE'}
+          </div>
+          <p className="text-[9px] mt-0.5 font-bold uppercase tracking-tighter">
+            {data.activeSource === 'Physical IoT' 
+              ? <span className="text-emerald-500">Physical Hardware</span> 
+              : <span className="text-accent">Digital Twin</span>}
+          </p>
         </Card>
 
         {/* Global Error */}
-        <Card className="hover:border-danger/20 transition-colors">
-          <CardHeader className="flex flex-row justify-between items-center pb-2">
-            <CardTitle className="text-[10px]">System Error Rate</CardTitle>
-            <ShieldAlert className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold font-mono ${((data.posError || 0) + (data.tempError || 0)) > 10 ? 'text-danger' : 'text-foreground'}`}>
-              {((data.posError || 0) + (data.tempError || 0)).toFixed(1)}%
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Combined positional & thermal drift
-            </p>
-          </CardContent>
+        <Card className="hover:border-danger/20 transition-colors py-1.5 px-3">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">System Error</span>
+            <ShieldAlert className="h-3 w-3 text-muted-foreground/40" />
+          </div>
+          <div className={`text-lg font-bold font-mono ${((data.posError || 0) + (data.tempError || 0)) > 10 ? 'text-danger' : 'text-foreground'}`}>
+            {((data.posError || 0) + (data.tempError || 0)).toFixed(1)}%
+          </div>
+          <p className="text-[8px] text-muted-foreground mt-0.5 uppercase tracking-tighter">
+            Combined Drift Metrics
+          </p>
         </Card>
 
         {/* Control Node */}
-        <Card className="bg-primary/5 border-primary/20">
-          <CardContent className="h-full flex items-center justify-center p-4">
+        <Card className="bg-primary/5 border-primary/20 overflow-hidden relative group">
+           <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+           <CardContent className="h-full flex items-center justify-center p-2 relative z-10">
             <Button 
                 variant={data.isSimRunning ? "danger" : "primary"}
-                size="lg"
-                className="w-full gap-2 font-mono h-14"
+                size="sm"
+                className="w-full gap-2 font-black h-10 text-[10px] tracking-[0.2em] shadow-lg transition-all active:scale-95"
                 onClick={toggleSimulation}
             >
-              {data.isSimRunning ? <><PowerOff size={18} /> STOP SIMULATION</> : <><Play size={18} /> START SIMULATION</>}
+              {data.isSimRunning ? <><PowerOff size={14} /> STOP</> : <><Play size={14} /> START SYSTEM</>}
             </Button>
           </CardContent>
         </Card>
       </div>
 
-      {/* ─── MAIN BENTO GRID ─────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      {/* ─── MAIN BENTO GRID (Viewport Optimized) ────────────────────────────── */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 flex-1 min-h-0 min-w-0 overflow-hidden">
         
-        {/* Left Col: Telemetry Charts */}
-        <div className="xl:col-span-2 flex flex-col gap-6">
-          <Card className="flex-1 overflow-hidden min-h-[300px]">
-            <CardHeader className="py-3">
-              <CardTitle>Positional Data (mm)</CardTitle>
+        {/* Left Col: Telemetry Charts (Swapped Order) */}
+        <div className="xl:col-span-2 flex flex-col gap-4 min-h-0 min-w-0">
+          
+          {/* Thermal Dynamics (NOW ON TOP) */}
+          <Card className="flex-1 overflow-hidden min-h-0 min-w-0 flex flex-col">
+            <CardHeader className="py-2 flex flex-row items-center justify-between shrink-0">
+              <CardTitle className="text-sm">Thermal Dynamics (°C)</CardTitle>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="number" 
+                  step="0.1"
+                  placeholder="Target °C..."
+                  value={targetTemp}
+                  onChange={(e) => setTargetTemp(e.target.value)}
+                  className="w-20 h-7 bg-muted/20 border border-border/50 rounded px-2 text-[10px] font-mono focus:outline-none focus:border-accent/50"
+                />
+                <Button 
+                  size="sm" 
+                  variant="secondary"
+                  className="h-7 px-2 text-[8px] font-tech tracking-wider border-accent/20 hover:border-accent/50"
+                  onClick={handleExecuteTemp}
+                  disabled={!targetTemp}
+                >
+                  EXECUTE
+                </Button>
+              </div>
             </CardHeader>
-            <CardContent className="p-0 h-[calc(100%-48px)]">
-              <TelemetryGraph title="" data={data.position} color="var(--primary)" unit="mm" />
+            <CardContent className="p-0 flex-1 min-h-0 min-w-0">
+              <TelemetryGraph title="" data={data.temperature} color="var(--accent)" unit="°C" />
             </CardContent>
           </Card>
-          
-          <Card className="flex-1 overflow-hidden min-h-[300px]">
-            <CardHeader className="py-3 items-start md:items-center md:flex-row md:justify-between">
-              <CardTitle>Thermal Dynamics (°C)</CardTitle>
+
+          {/* Positional Data (NOW BELOW) */}
+          <Card className="flex-1 overflow-hidden min-h-0 min-w-0 flex flex-col">
+            <CardHeader className="py-2 flex flex-row items-center justify-between shrink-0">
+              <CardTitle className="text-sm">Positional Data (mm)</CardTitle>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="number" 
+                  step="0.01"
+                  placeholder="Target mm..."
+                  value={targetPos}
+                  onChange={(e) => setTargetPos(e.target.value)}
+                  className="w-20 h-7 bg-muted/20 border border-border/50 rounded px-2 text-[10px] font-mono focus:outline-none focus:border-primary/50"
+                />
+                <Button 
+                  size="sm" 
+                  className="h-7 px-2 text-[8px] font-tech tracking-wider"
+                  onClick={handleExecutePos}
+                  disabled={!targetPos}
+                >
+                  EXECUTE
+                </Button>
+              </div>
             </CardHeader>
-            <CardContent className="p-0 h-[calc(100%-48px)]">
-              <TelemetryGraph title="" data={data.temperature} color="var(--accent)" unit="°C" />
+            <CardContent className="p-0 flex-1 min-h-0 min-w-0">
+              <TelemetryGraph title="" data={data.position} color="var(--primary)" unit="mm" />
             </CardContent>
           </Card>
         </div>
 
         {/* Right Col: AI & Risk */}
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4 min-h-0">
             
-
             {/* Risk Indicator Panel */}
-            <Card className="relative overflow-hidden group min-h-[250px]">
-                <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
+            <Card className="relative overflow-hidden group h-[55%] flex flex-col shrink-0">
+                  <CardHeader className="py-2 shrink-0 border-b border-border/50 bg-muted/5">
+                    <CardTitle className="flex items-center justify-between text-[11px] font-black tracking-widest uppercase text-muted-foreground/80">
                         Neural Risk Assessment
-                        <Badge variant={data.riskScore > 0.6 ? "danger" : (data.riskScore > 0.3 ? "primary" : "success")}>
-                           {data.riskScore > 0.6 ? "CRITICAL" : (data.riskScore > 0.3 ? "WARNING" : "STABLE")}
+                        <Badge variant={data.riskScore > 0.6 ? "danger" : (data.riskScore > 0.3 ? "primary" : "success")} className="text-[8px] py-0 px-1 font-mono">
+                           {(data.riskScore * 100).toFixed(1)}% {data.riskScore > 0.6 ? "CRITICAL" : (data.riskScore > 0.3 ? "WARNING" : "STABLE")}
                         </Badge>
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col items-center justify-center flex-1 py-8">
-                     <RiskIndicator score={data.riskScore} trend={data.riskTrend} />
-                     <div className="w-full mt-6">
+                <CardContent className="flex flex-col items-center justify-center flex-1 min-h-0 pb-4 pt-2">
+                     <div className="scale-[0.8] origin-center -my-2 flex-1 flex items-center justify-center">
+                        <RiskIndicator score={data.riskScore} trend={data.riskTrend} />
+                     </div>
+                     <div className="w-full px-3 shrink-0">
                         <ErrorMetrics posError={data.posError} tempError={data.tempError} />
                      </div>
                 </CardContent>
             </Card>
 
-            {/* Self-Healing Status Panel */}
-            <Card className={`flex-1 flex flex-col min-h-[300px] border-2 transition-all ${data.healing?.issue_detected ? 'border-accent shadow-md glow-accent' : 'border-border'}`}>
-                <CardHeader className="pb-4 border-b border-border/50 relative overflow-hidden bg-muted/5">
-                    <CardTitle className="flex items-center justify-between z-10 relative">
+            {/* Self-Healing Engine Panel */}
+            <Card className={`flex-1 flex flex-col min-h-0 border transition-all ${data.healing?.issue_detected ? 'border-accent/40 shadow-lg shadow-accent/10' : 'border-border'}`}>
+                <CardHeader className="py-2 border-b border-border/50 bg-muted/5 shrink-0">
+                    <CardTitle className="flex items-center justify-between text-[11px] font-black tracking-widest uppercase text-muted-foreground/80">
                         <span className="flex items-center gap-2">
-                           <Cpu className={`h-4 w-4 ${data.healing?.issue_detected ? 'text-accent animate-pulse' : 'text-primary'}`} />
+                           <Cpu className={`h-3 w-3 ${data.healing?.issue_detected ? 'text-accent animate-pulse' : 'text-primary'}`} />
                            Self-Healing Engine
                         </span>
-                        {data.healing?.issue_detected && data.healing?.verification_status === 'verifying' && (
-                           <Badge variant="primary" className="animate-pulse">Active Verification</Badge>
-                        )}
-                        {data.healing?.verification_status === 'recovered' && (
-                           <Badge variant="success">Recovered</Badge>
-                        )}
-                        {data.healing?.verification_status === 'escalated' && (
-                           <Badge variant="danger">Escalated</Badge>
-                        )}
+                        {data.healing?.issue_detected && <Badge variant="primary" className="animate-pulse text-[8px] py-0 px-2">ACTIVE CORRECTION</Badge>}
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+                <CardContent className="flex-1 flex flex-col items-center justify-center p-4 text-center min-h-0">
                     {!data.healing || !data.healing.issue_detected ? (
-                        <>
-                           <ShieldAlert size={32} className="mb-4 text-muted-foreground opacity-50" />
-                           <p className="font-mono text-sm tracking-widest uppercase text-muted-foreground">System Nominal</p>
-                           <p className="text-xs text-muted-foreground/70 mt-2 max-w-xs">Autonomous correction engine is standing by for an anomaly alert.</p>
-                        </>
+                        <div className="animate-in fade-in duration-700">
+                           <ShieldAlert size={20} className="mb-2 text-muted-foreground/30 mx-auto" />
+                           <p className="font-mono text-[9px] tracking-[0.2em] uppercase text-muted-foreground/60 leading-tight">Autonomous Guard Standing By</p>
+                        </div>
                     ) : (
-                        <div className="w-full flex flex-col items-center animate-in fade-in zoom-in duration-300">
-                           <p className="text-xs font-bold text-danger uppercase tracking-[0.2em] mb-2 w-full text-left">Threat Neutralized</p>
-                           <div className="w-full bg-danger/10 border border-danger/20 rounded-lg p-3 text-left mb-6">
-                               <p className="font-mono text-sm text-foreground/90 font-bold">{data.healing.root_cause}</p>
+                        <div className="w-full flex flex-col items-center animate-in slide-in-from-bottom-2 duration-500">
+                           <div className="w-full text-left">
+                               <span className="text-[8px] font-black text-danger/50 uppercase tracking-[0.2em]">Threat Log</span>
+                               <p className="font-mono text-[10px] text-foreground/90 font-bold bg-danger/5 border border-danger/20 p-2 rounded mt-1 mb-3 leading-tight">{data.healing.root_cause}</p>
                            </div>
                            
-                           <p className="text-xs font-bold text-accent uppercase tracking-[0.2em] mb-2 w-full text-left">Deployed Autonomous Fix</p>
-                           <div className="w-full bg-accent/10 border border-accent/20 rounded-lg p-4 text-left relative overflow-hidden">
-                               <div className="absolute top-0 right-0 h-full w-1 bg-accent" />
-                               <p className="font-mono font-bold text-lg text-accent uppercase">{data.healing.selected_action}</p>
-                               {data.healing.action_value !== null && (
-                                   <p className="text-sm font-mono text-foreground mt-2">Adjusted Value: <span className="text-accent">{data.healing.action_value}</span></p>
-                               )}
-                               <p className="text-xs text-muted-foreground mt-2">{data.healing.reasoning}</p>
+                           <div className="w-full text-left">
+                               <span className="text-[8px] font-black text-accent/50 uppercase tracking-[0.2em]">Deployed Strategy</span>
+                               <div className="bg-accent/5 border border-accent/20 rounded p-2 mt-1 relative overflow-hidden group/fix">
+                                   <div className="absolute left-0 top-0 bottom-0 w-1 bg-accent/30 group-hover/fix:bg-accent transition-colors" />
+                                   <p className="font-mono font-black text-xs text-accent uppercase">{data.healing.selected_action}</p>
+                                   <p className="text-[9px] text-muted-foreground mt-1 leading-snug line-clamp-2 italic">{data.healing.reasoning}</p>
+                               </div>
                            </div>
                         </div>
                     )}

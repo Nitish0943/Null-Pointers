@@ -83,17 +83,17 @@ export default function LogsPage() {
                       </td>
                       <td className="px-6 py-3">
                           <div className="flex flex-col">
-                             <span>{Number(row.position).toFixed(2)}</span>
+                             <span>{Number(row.actual_position ?? row.position ?? 0).toFixed(2)}</span>
                              <span className="text-[10px] text-muted-foreground border-t border-border mt-1 pt-1 border-dashed">
-                                Pred: {Number(row.predicted_position || 0).toFixed(2)}
+                                Pred: {Number(row.predicted_position || row.actual_position || row.position || 0).toFixed(2)}
                              </span>
                           </div>
                       </td>
                       <td className="px-6 py-3">
                           <div className="flex flex-col">
-                             <span>{Number(row.temperature).toFixed(2)}</span>
+                             <span>{Number(row.actual_temperature ?? row.temperature ?? 0).toFixed(2)}</span>
                              <span className="text-[10px] text-muted-foreground border-t border-border mt-1 pt-1 border-dashed">
-                                Pred: {Number(row.predicted_temperature || 0).toFixed(2)}
+                                Pred: {Number(row.predicted_temperature || row.actual_temperature || row.temperature || 0).toFixed(2)}
                              </span>
                           </div>
                       </td>

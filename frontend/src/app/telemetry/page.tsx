@@ -16,10 +16,10 @@ export default function TelemetryPage() {
       // Transform backend data to GraphPoint format for our existing component
       const formatted = data.map((d: any) => ({
         time: new Date(d.timestamp).toLocaleTimeString(),
-        actual: d.position,
-        predicted: d.predicted_position || d.position, 
-        actualTemp: d.temperature,
-        predictedTemp: d.predicted_temperature || d.temperature
+        actual: d.actual_position ?? d.position,
+        predicted: d.predicted_position ?? d.actual_position ?? d.position, 
+        actualTemp: d.actual_temperature ?? d.temperature,
+        predictedTemp: d.predicted_temperature ?? d.actual_temperature ?? d.temperature
       })).reverse(); // Oldest first for chart left-to-right
 
       setHistory(formatted);

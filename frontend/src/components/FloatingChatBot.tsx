@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { MessageSquare, X, Send, BrainCircuit, Activity, ShieldCircle, Zap } from 'lucide-react';
+import { MessageSquare, X, Send, BrainCircuit, Activity, Zap } from 'lucide-react';
 import { sendAgentMessage } from '@/lib/api';
 
 interface Message {

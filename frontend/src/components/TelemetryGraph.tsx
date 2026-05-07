@@ -1,6 +1,7 @@
 "use client";
 
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { useEffect, useRef, useState } from 'react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 interface DataPoint {
   time: string;
@@ -16,21 +17,46 @@ interface TelemetryGraphProps {
 }
 
 export default function TelemetryGraph({ title, data, color, unit }: TelemetryGraphProps) {
+  const chartHostRef = useRef<HTMLDivElement | null>(null);
+  const [chartSize, setChartSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    const node = chartHostRef.current;
+    if (!node) return;
+
+    const updateChartSize = () => {
+      const { width, height } = node.getBoundingClientRect();
+      setChartSize({
+        width: Math.max(0, Math.floor(width)),
+        height: Math.max(0, Math.floor(height)),
+      });
+    };
+
+    updateChartSize();
+
+    const observer = new ResizeObserver(updateChartSize);
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, []);
+
+  const chartReady = chartSize.width > 0 && chartSize.height > 0;
+
   return (
-    <div className="flex flex-col h-full bg-transparent overflow-hidden p-6 select-none">
-      <div className="flex items-center justify-between mb-4">
+    <div className="flex flex-col h-full min-w-0 bg-transparent overflow-hidden px-4 py-3 select-none">
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-3">
-          <div className="w-1.5 h-4 rounded-full" style={{ backgroundColor: color }} />
-          <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/70 font-tech">{title}</h3>
+          <div className="w-1.5 h-3 rounded-full" style={{ backgroundColor: color }} />
+          <h3 className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/60 font-tech">{title}</h3>
         </div>
-        <div className="flex items-center gap-2 px-2 py-0.5 rounded bg-background/30 border border-border/50">
-          <span className="text-[9px] font-mono text-muted uppercase">Unit: {unit}</span>
+        <div className="flex items-center gap-2 px-1.5 py-0.5 rounded bg-background/30 border border-border/50">
+          <span className="text-[8px] font-mono text-muted/40 uppercase">Unit: {unit}</span>
         </div>
       </div>
       
-      <div className="flex-1 w-full min-h-0">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data}>
+      <div ref={chartHostRef} className="flex-1 w-full min-w-0 min-h-[160px]">
+        {chartReady ? (
+          <AreaChart width={chartSize.width} height={chartSize.height} data={data}>
             <defs>
               <linearGradient id={`gradient-${title.replace(/\s+/g, '')}`} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={color} stopOpacity={0.15}/>
@@ -81,7 +107,7 @@ export default function TelemetryGraph({ title, data, color, unit }: TelemetryGr
                 boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)',
                 border: '1px solid rgba(255,255,255,0.05)'
               }}
-              itemStyle={{ color: '#fff', textTransform: 'uppercase', fontScale: '0.8' }}
+              itemStyle={{ color: '#fff', textTransform: 'uppercase', fontSize: '10px' }}
               cursor={{ stroke: color, strokeWidth: 1, strokeDasharray: '4 4' }}
             />
             
@@ -117,7 +143,9 @@ export default function TelemetryGraph({ title, data, color, unit }: TelemetryGr
               filter="url(#glow)"
             />
           </AreaChart>
-        </ResponsiveContainer>
+        ) : (
+          <div className="h-full w-full" />
+        )}
       </div>
     </div>
   );

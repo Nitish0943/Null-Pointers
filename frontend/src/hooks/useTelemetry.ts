@@ -17,6 +17,7 @@ export interface TelemetryState {
   recommendations: string[];
   isSimRunning: boolean;
   activeSource: string;
+  healing: any | null;
   maintenance: any[];
   lossMetrics: any | null;
   failureTimeline: { past_events: string[]; future_if_ignored: string[] } | null;
